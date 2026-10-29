@@ -1,49 +1,94 @@
-# Biblioteca
+# Biblioteca — API de préstamos
 
-API REST para el proyecto de Programación Web 2 (hasta semana 7 / Hito 2, avance 1). Node.js + Express + Prisma 7 + PostgreSQL.
+API REST de préstamos de la biblioteca de la universidad. Parcial 1 de Programación Web 2.
 
-## Arranque desde cero
+**Stack:** Node.js 22.18+ (ES modules), Express 5, Prisma 7.10.0 y PostgreSQL 16.
 
-1. Instalar dependencias:
+**Autor:** ALEJANDRO VILLA OSORIO · GitHub: [avilla0x](https://github.com/avilla0x)
+
+## Levantar el proyecto desde cero
+
+1. Crear el contenedor de PostgreSQL (puerto 5433 → 5432):
+
+   ```bash
+   docker run --name biblioteca-db -e POSTGRES_USER=biblio -e POSTGRES_PASSWORD=secreto123 -e POSTGRES_DB=biblioteca -p 5433:5432 -d postgres:16
    ```
+
+2. Instalar dependencias (el `postinstall` ya genera el cliente de Prisma):
+
+   ```bash
    npm install
    ```
-2. Crear el contenedor de PostgreSQL (puerto 5433 → 5432):
+
+3. Crear el archivo de entorno y ajustar la URL si tu contenedor es distinto:
+
+   ```bash
+   cp .env.example .env
    ```
-   docker run --name campuseats-db -e POSTGRES_USER=campuseats -e POSTGRES_PASSWORD=campuseats -e POSTGRES_DB=campuseats -p 5433:5432 -d postgres:16
-   ```
-3. Copiar `.env.example` a `.env` y ajustar usuario/clave/puerto si es necesario.
-4. Aplicar las migraciones:
-   ```
+
+4. Aplicar la migración `inicial` y generar el cliente (en Prisma 7, `migrate` no lo genera solo):
+
+   ```bash
    npx prisma migrate deploy
+   npx prisma generate
    ```
-5. Cargar los datos de ejemplo (re-ejecutable, usa `upsert`):
-   ```
+
+5. Cargar los datos de ejemplo (3 socios, 5 libros y 3 préstamos):
+
+   ```bash
    npx prisma db seed
    ```
-6. Levantar la API en modo desarrollo (http://localhost:3000):
-   ```
+
+6. Arrancar la API en http://localhost:4000:
+
+   ```bash
    npm run dev
    ```
+
+Para volver a la base recién sembrada en cualquier momento:
+
+```bash
+npx prisma migrate reset
+npx prisma db seed
+```
+
+## Endpoints
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/libros` | Lista con filtros `buscar`, `disponibles` y paginación `pagina`, `porPagina` |
+| GET | `/api/libros/:id` | Ver un libro |
+| POST | `/api/libros` | Registrar un libro (`titulo`, `autor`, `isbn`, `ejemplares`) |
+| POST | `/api/prestamos` | Prestar un libro (`socioId`, `libroId`) |
+| PATCH | `/api/prestamos/:id/devolucion` | Devolver un libro |
+| GET | `/api/socios/:id/prestamos` | Historial de un socio, filtrable con `?estado=ACTIVO` o `DEVUELTO` |
+
+Los errores siempre responden en JSON: `{ "error": "..." }`, y los de validación (400) agregan `"detalles": [...]`.
 
 ## Estructura
 
 ```
 src/
-├── server.js        # arranca el servidor
-├── app.js           # configura Express (middlewares y rutas)
+├── server.js        # arranca el servidor (puerto 4000)
+├── app.js           # configura Express: middlewares, rutas, 404 y errores
 ├── db.js            # instancia única de PrismaClient
 ├── errores.js       # ErrorHttp y fábricas (noEncontrado, conflicto, datosInvalidos)
-├── routes/          # mapa de URLs -> controllers
-├── controllers/     # traduce HTTP <-> negocio, siempre con next(error)
-├── services/        # reglas de negocio, no conocen req/res
-└── middlewares/      # validar.js (express-validator) y errores.js (manejador central)
+├── routes/          # reglas de express-validator y mapa de URLs
+├── controllers/     # traducen HTTP <-> negocio; los errores van a next(error)
+├── services/        # reglas de negocio y consultas; no conocen req/res
+└── middlewares/     # validar.js y errores.js (manejador central)
+prisma/
+├── schema.prisma    # Socio, Libro, Prestamo y el enum EstadoPrestamo
+├── migrations/      # migración inicial
+└── seed.js          # datos de ejemplo
 ```
 
-## Endpoints
+## Prueba de concurrencia
 
-- `GET/POST /api/productos`, `GET/PUT/DELETE /api/productos/:id`, `PATCH /api/productos/:id/stock` (`{ "delta": N }`)
-- `POST /api/pedidos`, `GET /api/pedidos`, `GET /api/pedidos/:id`, `PATCH /api/pedidos/:id/estado`
-- `GET /api/reportes/ventas-dia`
+Con la API encendida y la base recién sembrada, el libro 5 tiene un solo ejemplar:
 
-La colección de Postman está en `docs/postman/` (una para productos, otra para pedidos).
+```bash
+node carrera-biblioteca.mjs
+```
+
+Resultado esperado: `Aceptados: 1 · Rechazados: 9` y `Disponibles: 0`. El descuento del ejemplar es atómico: la condición `ejemplaresDisponibles > 0` va en el `WHERE` de un `updateMany` dentro de la transacción.
