@@ -3,6 +3,8 @@ import express from 'express';
 import morgan from 'morgan';
 import { manejarErrores } from './middlewares/errores.js';
 import librosRouter from './routes/libros.routes.js';
+import sociosRouter from './routes/socios.routes.js';
+import prestamosRouter from './routes/prestamos.routes.js';
 
 const app = express();
 
@@ -12,6 +14,8 @@ app.use(express.json());
 
 app.get('/', (req, res) => res.json({ nombre: 'Biblioteca API', version: '1.0' }));
 app.use('/api/libros', librosRouter);
+app.use('/api/socios', sociosRouter);
+app.use('/api/prestamos', prestamosRouter)
 
 // 404 para rutas inexistentes (después de todas las rutas)
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
