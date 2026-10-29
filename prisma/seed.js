@@ -60,11 +60,6 @@ async function main() {
   await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('"Prestamo"', 'id'), (SELECT MAX(id) FROM "Prestamo"))`;
 }
 
-
-
-
-
-
 main()
   .then(() => prisma.$disconnect())
   .catch(async (error) => {
