@@ -1,10 +1,14 @@
 // src/routes/libros.routes.js
 import { Router } from 'express';
-import { query } from 'express-validator';
 import * as controlador from '../controllers/libros.controller.js';
 import { validar } from '../middlewares/validar.js';
+import { param, query } from 'express-validator';
 
 const router = Router();
+
+const idValido = param('id')
+  .isInt({ min: 1 }).withMessage('El id debe ser entero positivo')
+  .toInt();
 
 const reglasListar = [
   query('buscar')
@@ -30,5 +34,7 @@ const reglasListar = [
 ];
 
 router.get('/', reglasListar, validar, controlador.listar);
+
+router.get('/:id', idValido, validar, controlador.obtener);
 
 export default router;

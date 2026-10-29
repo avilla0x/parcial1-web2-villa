@@ -17,3 +17,12 @@ export async function listar(req, res, next) {
     next(error);
   }
 }
+
+export async function obtener(req, res, next){
+  try{
+    const libro = await servicio.buscarPorId(Number(req.params.id));
+    res.json(libro);
+  } catch (error){
+    next(error);
+  }
+}

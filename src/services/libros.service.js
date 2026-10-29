@@ -1,5 +1,13 @@
 // src/services/libros.service.js
 import { prisma } from '../db.js';
+import { noEncontrado } from '../errores.js';
+
+
+export async function buscarPorId(id) {
+  const libro = await prisma.libro.findUnique({ where: { id } });
+  if (!libro) throw noEncontrado('Libro');
+  return libro;
+}
 
 export async function listar({ buscar, disponibles, pagina, porPagina }) {
   const condiciones = [];
