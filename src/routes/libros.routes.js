@@ -2,13 +2,34 @@
 import { Router } from 'express';
 import * as controlador from '../controllers/libros.controller.js';
 import { validar } from '../middlewares/validar.js';
-import { param, query } from 'express-validator';
+import { body, param, query } from 'express-validator';
 
 const router = Router();
 
 const idValido = param('id')
   .isInt({ min: 1 }).withMessage('El id debe ser entero positivo')
   .toInt();
+
+const reglasCrear = [
+  body('titulo')
+    .isString().withMessage('El título debe ser texto').bail()
+    .trim()
+    .notEmpty().withMessage('El título es obligatorio'),
+
+   body('autor')
+    .isString().withMessage('El autor debe ser texto').bail()
+    .trim()
+    .notEmpty().withMessage('El autor es obligatorio'),
+
+  body('isbn')
+    .isString().withMessage('El ISBN debe ser texto').bail()
+    .trim()
+    .notEmpty().withMessage('El ISBN es obligatorio'), 
+
+  body('ejemplares')
+    .isInt({ min: 1, max: 50 }).withMessage('ejemplares debe ser un entero entre 1 y 50')
+    .toInt(),
+];
 
 const reglasListar = [
   query('buscar')
@@ -36,5 +57,7 @@ const reglasListar = [
 router.get('/', reglasListar, validar, controlador.listar);
 
 router.get('/:id', idValido, validar, controlador.obtener);
+
+router.post('/', reglasCrear, validar, controlador.crear);
 
 export default router;

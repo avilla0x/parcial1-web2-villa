@@ -1,7 +1,25 @@
 // src/services/libros.service.js
 import { prisma } from '../db.js';
-import { noEncontrado } from '../errores.js';
+import { conflicto, noEncontrado } from '../errores.js';
 
+export async function crear({titulo , autor, isbn, ejemplares}){
+    const libroExistente = await prisma.libro.findUnique({
+        where: { isbn },
+    });
+
+    if (libroExistente){
+        throw conflicto('Ya existe un libro con ese ISBN');
+    }
+   return prisma.libro.create({
+    data: {
+      titulo,
+      autor,
+      isbn,
+      ejemplaresTotales: ejemplares,
+      ejemplaresDisponibles: ejemplares,
+    },
+  }); 
+}
 
 export async function buscarPorId(id) {
   const libro = await prisma.libro.findUnique({ where: { id } });
